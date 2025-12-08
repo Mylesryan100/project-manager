@@ -82,20 +82,45 @@ projectRouter.put("/:projectId", async (req, res) => {
     }
 
     if (project.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "User is not authorized to update this project!" });
+      return res
+        .status(403)
+        .json({ message: "User is not authorized to update this project!" });
     }
 
-    
+    await project.deleteOne();
+    return res.json({ message: "Project deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Server error deleting project." });
+  }
+});
 
 /**
  * DELETE /api/projects/projectId
  */
 projectRouter.delete("/:projectId", async (req, res) => {
-  
-  
-  
-  
-  // res.send("delete project....");
+  try {
+    const { projectId } = req.params;
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      return res
+        .status(404)
+        .json({ message: `Project with id: ${projectId} not found!` });
+    }
+
+    if (project.user.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "User is not authorized to delete this project!" });
+    }
+
+    await project.deleteOne();
+    return res.json({ message: "Project deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Server error deleting project." });
+  }
 });
 
 module.exports = projectRouter;
