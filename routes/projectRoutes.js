@@ -38,13 +38,12 @@ projectRouter.get("/:projectId", async (req, res) => {
     // Authorization
     console.log(req.user._id);
     console.log(project.user);
-    
+
     if (project.user.toString() !== req.user._id) {
       return res.status(403).json({ message: "User is not authorized!" });
     }
 
     res.json(project);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
@@ -72,14 +71,21 @@ projectRouter.post("/", async (req, res) => {
  * PUT /api/projects/projectId
  */
 projectRouter.put("/:projectId", async (req, res) => {
-  res.send("update project....");
-});
+  try {
+    const { projectId } = req.params;
+    const project = await Project.findById(projectId);
+
+    
 
 /**
  * DELETE /api/projects/projectId
  */
 projectRouter.delete("/:projectId", async (req, res) => {
-  res.send("delete project....");
+  
+  
+  
+  
+  // res.send("delete project....");
 });
 
 module.exports = projectRouter;
