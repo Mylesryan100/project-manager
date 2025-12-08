@@ -1,6 +1,5 @@
 const Project = require("../models/Project");
 
-
 // This section is to GET /api/projects
 // GETS/RETRIEVES all projects for the currently logged in user
 async function getProjects(req, res) {
@@ -14,7 +13,6 @@ async function getProjects(req, res) {
     return res.status(500).json({ message: "Server error fetching projects." });
   }
 }
-
 
 // this section is to GET /api/projects/:projectId
 // Adds the functionality to GET a single project
