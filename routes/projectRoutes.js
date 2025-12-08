@@ -87,11 +87,14 @@ projectRouter.put("/:projectId", async (req, res) => {
         .json({ message: "User is not authorized to update this project!" });
     }
 
-    await project.deleteOne();
-    return res.json({ message: "Project deleted successfully." });
+    project.name = req.body.name ?? project.name;
+    project.description = req.body.description ?? project.description;
+
+    const updatedProject = await project.save();
+    return res.json(updatedProject);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Server error deleting project." });
+    return res.status(500).json({ error: "Server error updating project." });
   }
 });
 

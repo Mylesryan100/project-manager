@@ -2,6 +2,7 @@ const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const cors = require('cors')
+const taskRouter = require("./routes/taskRoutes");
 
 // Set up all variables in the .env file
 require('dotenv').config();
@@ -21,6 +22,7 @@ const app = express();
 app.use(morgan('dev')); // logger
 app.use(express.json()); // body parser
 app.use(cors({origin: process.env.FRONTEND_URL}))
+app.use("/api/projects/:projectId/tasks", taskRouter);
 require('./config/passport');
 
 // ========= Routes ======================
