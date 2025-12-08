@@ -75,6 +75,16 @@ projectRouter.put("/:projectId", async (req, res) => {
     const { projectId } = req.params;
     const project = await Project.findById(projectId);
 
+    if (!project) {
+      return res
+        .status(404)
+        .json({ message: `Project with id: ${projectId} not found!` });
+    }
+
+    if (project.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "User is not authorized to update this project!" });
+    }
+
     
 
 /**
