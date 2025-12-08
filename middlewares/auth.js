@@ -13,7 +13,7 @@ function authMiddleware(req, res, next) {
   }
 
   if (!token) {
-    return res.status(403).json({message: "Please Login or Register" })
+    return res.status(403).json({ message: "Please Login or Register" });
     // next();
   }
 
@@ -32,7 +32,7 @@ function authMiddleware(req, res, next) {
 
 function adminOnly(req, res, next) {
   if (req.user && req.user.role === "admin") {
-    next(); // User is an admin, proceed
+    return next(); // User is an admin, proceed
   } else {
     res.status(403).json({ message: "Access denied. Admins only." });
   }
