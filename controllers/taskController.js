@@ -1,168 +1,126 @@
-const Task = require("../models/Task");
+const Task = require('../models/Task');
 const Project = require("../models/Project");
 
-// This sections helps the user/owner find their currently owned project
-async function findOwnedProject(projectId, userId) {
-  return Project.findOne({ _id: projectId, user: userId });
+
+
+/**
+ * Get All Tasks
+ */
+const getAllTasks = async (req, res) => {
+    try {
+        const tasks = await Task.find()
+        res.send(tasks)
+    } catch (error) {
+        res.status(500).json({error: error.message})
+    }
 }
 
-// This section is for GET /api/projects/:projectId/tasks
-// Gets/retrieves all tasks for a specific project owned by the current user
-async function getTasks(req, res) {
-  try {
-    const { projectId } = req.params;
 
-    const project = await findOwnedProject(projectId, req.user._id);
-    if (!project) {
-      return res.status(404).json({
-        message: `Project with id: ${projectId} not found or not authorized.`,
-      });
+/**
+ * Get a single task by id
+ */
+const getTaskById = async(req, res) => {
+    try {
+        const {taskId} = req.params;
+        const task = await Task.findById(taskId);
+        if (!task) return res.status(404).json({message: "Task not found"})
+       
+
+    // ffind the parent project
+        const project = await Project.findById(task.project);
+        if (!project)return res.status(404).json({ message: "Project of task not found" });
+
+    // Authorization
+    
+    if (project.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "User is not authorized!" });
     }
 
-    const tasks = await Task.find({ project: projectId }).sort("createdAt");
-    return res.json(tasks);
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    return res.status(500).json({ message: "Server error fetching tasks." });
-  }
+    res.json(task);
+
+    } catch (error) {
+        res.status(500).json({error: error.message})
+    }
 }
 
-// This section is for GET /api/projects/:projectId/tasks/:taskId
-// GETS/RETRIEVES a single task thats within the owned project by the current user
-async function getTaskById(req, res) {
-  try {
-    const { projectId, taskId } = req.params;
 
-    const project = await findOwnedProject(projectId, req.user._id);
-    if (!project) {
-      return res.status(404).json({
-        message: `Project with id: ${projectId} not found or not authorized.`,
-      });
+/**
+ * Post a new task
+ */
+//This declares an asynchronous function called createTask that takes two arguments: req (request object) and res (response object)
+const createTask = async( req,res) => {
+    //  error handling
+    try {
+        //capital T = Task model
+        //Task.create() = method to create new doc in database
+        //req.body contains the data sent by the client in the request body
+        // await is used because Task.create() is an asynchronous operation that returns a Promise, and the code waits for its resolution before proceeding.
+        //the newly created task document is then stored in the task variable w lowercase t.
+        const task = await Task.create(req.body)
+        //successful so send ok  and json(task) send new task obj back to client as json res
+            res.status(200).json(task)
+
+            // error occurs
+    } catch (error) {
+       res.status(400).json({error: error.message})
     }
-
-    const task = await Task.findOne({ _id: taskId, project: projectId });
-
-    if (!task) {
-      return res.status(404).json({
-        message: `Task with id: ${taskId} not found in this project.`,
-      });
-    }
-
-    return res.json(task);
-  } catch (error) {
-    console.error("Error fetching task:", error);
-    return res.status(500).json({ message: "Server error fetching task." });
-  }
 }
 
-// This section is for POST /api/projects/:projectId/tasks
-// Allows the owner of a project to create a new task in that project
-async function createTask(req, res) {
-  try {
-    const { projectId } = req.params;
-    const { title, description, status } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ message: "Task title is required." });
+
+/**
+ * Put - Update a task
+ */
+const updateTask = async(req, res) => {
+    try {
+        const { taskId } = req.params;
+        const task = await Task.findById(taskId);
+
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+       //checking if task is rom the correct projec
+        const project = await Project.findById(task.project);
+        if (!project) return res.status(404).json({ message: "Project of task not found" });
+
+        //authorization
+         if (project.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "User is not authorized!" });
     }
-
-    const project = await findOwnedProject(projectId, req.user._id);
-    if (!project) {
-      return res
-        .status(404)
-        .json({
-          message: `Project with id: ${projectId} not found or not authorized.`,
-        });
-    }
-
-    const newTask = await Task.create({
-      project: projectId,
-      title,
-      description,
-      status,
+        const updateTask = await Task.findByIdAndUpdate(taskId, req.body, {
+      new: true,
     });
 
-    return res.status(201).json(newTask);
-  } catch (error) {
-    console.error("Error creating task:", error);
-    return res.status(500).json({ message: "Server error creating task." });
-  }
+        
+        res.json(updateTask)
+    } catch (error) {
+        res.status(400).json({error: error.message})
+    }
 }
 
-// This section is for PUT /api/projects/:projectId/tasks/:taskId
-// Allows the owner of a project to update a task within that project
-async function updateTask(req, res) {
-  try {
-    const { projectId, taskId } = req.params;
 
-    const project = await findOwnedProject(projectId, req.user._id);
-    if (!project) {
-      return res
-        .status(404)
-        .json({
-          message: `Project with id: ${projectId} not found or not authorized.`,
-        });
+/**
+ * Delete a task
+ */
+const deleteTask = async (req, res) => {
+    try {
+        const {taskId} = req.params;
+        const task = await Task.findById(taskId);
+        
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+        const project = await Project.findById(task.project);
+        if (!project) return res.status(404).json({ message: "Project of task not found" });
+
+        if (project.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "User is not authorized!" });
     }
+    await Task.findByIdAndDelete(taskId);
+    res.json({ message: "Task deleted" });
 
-    const task = await Task.findOne({ _id: taskId, project: projectId });
-
-    if (!task) {
-      return res
-        .status(404)
-        .json({
-          message: `Task with id: ${taskId} not found in this project.`,
-        });
-    }
-
-    task.title = req.body.title ?? task.title;
-    task.description = req.body.description ?? task.description;
-    task.status = req.body.status ?? task.status;
-
-    const updatedTask = await task.save();
-    return res.json(updatedTask);
   } catch (error) {
-    console.error("Error updating task:", error);
-    return res.status(500).json({ message: "Server error updating task." });
+    res.status(400).json({ error: error.message });
   }
-}
-
-// This section is for DELETE /api/projects/:projectId/tasks/:taskId
-// Allows only the owner of the project to delete a task in that project
-async function deleteTask(req, res) {
-  try {
-    const { projectId, taskId } = req.params;
-
-    const project = await findOwnedProject(projectId, req.user._id);
-    if (!project) {
-      return res
-        .status(404)
-        .json({
-          message: `Project with id: ${projectId} not found or not authorized.`,
-        });
-    }
-
-    const task = await Task.findOne({ _id: taskId, project: projectId });
-
-    if (!task) {
-      return res
-        .status(404)
-        .json({
-          message: `Task with id: ${taskId} not found in this project.`,
-        });
-    }
-
-    await task.deleteOne();
-    return res.json({ message: "Task deleted successfully." });
-  } catch (error) {
-    console.error("Error deleting task:", error);
-    return res.status(500).json({ message: "Server error deleting task." });
-  }
-}
-
-module.exports = {
-  getTasks,
-  getTaskById,
-  createTask,
-  updateTask,
-  deleteTask,
 };
+
+
+module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask}
