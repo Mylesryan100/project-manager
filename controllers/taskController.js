@@ -9,28 +9,26 @@ const getAllTasks = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    // Find the parent project
+    // Make sure the project exists and belongs to this user
     const project = await Project.findById(projectId);
     if (!project) {
-      return res
-        .status(404)
-        .json({ message: `Project with id ${projectId} not found` });
+      return res.status(404).json({ message: "Project not found" });
     }
 
-    // Ownership check
     if (project.user.toString() !== req.user._id.toString()) {
       return res
         .status(403)
         .json({ message: "User is not authorized to view tasks for this project" });
     }
 
-    const tasks = await Task.find({ project: projectId }).sort("createdAt");
+    const tasks = await Task.find({ project: projectId });
     return res.json(tasks);
   } catch (error) {
     console.error("Error fetching tasks:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
+
 
 /**
  * GET /api/projects/:projectId/tasks/:taskId
@@ -75,38 +73,31 @@ const createTask = async (req, res) => {
     const { projectId } = req.params;
     const { title, description, status } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ message: "Task title is required." });
-    }
-
-    // Find the parent project
+    // 1. Make sure the project exists
     const project = await Project.findById(projectId);
     if (!project) {
-      return res
-        .status(404)
-        .json({ message: `Project with id ${projectId} not found` });
+      return res.status(404).json({ message: "Project not found" });
     }
 
-    // Authorization: only owner can add tasks
+    // 2. Ownership check
     if (project.user.toString() !== req.user._id.toString()) {
       return res
         .status(403)
         .json({ message: "User is not authorized to add tasks to this project" });
     }
 
-    // Create task, making sure project field is set
+    // 3. Actually create the task, including the project id
     const task = await Task.create({
-      project: projectId,
+      project: projectId,    // REQUIRED by your schema
       title,
       description,
-      status: status || "todo",
+      status,                // must be "todo" | "in-progress" | "done"
     });
 
-    // IMPORTANT: send JSON response so frontend can finish
     return res.status(201).json(task);
   } catch (error) {
     console.error("Error creating task:", error);
-    return res.status(400).json({ error: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
 
